@@ -1,0 +1,15 @@
+import sys
+sys.path.append("./src")
+
+import boto3
+import os
+import logging
+import json
+import time
+import requests
+from urllib.request import Request, urlopen
+
+logging.basicConfig(level="INFO")
+
+def lambda_handler(event, context):
+    # Custom connector implementation

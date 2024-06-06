@@ -1,0 +1,76 @@
+import os
+from aws_cdk import (
+    Duration,
+    Stack,
+    CfnOutput as StackOutput,
+    aws_ec2 as ec2,
+    aws_ecr as ecr,
+    aws_ecs as ecs,
+    aws_ecs_patterns as ecs_patterns,
+    aws_lambda as lambda_,
+    aws_iam as iam,
+)
+from constructs import Construct
+
+REPO_NAME = 'qbus-workshop'
+
+class CdkStack(Stack):
+
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        # Custom data source resources
+        vpc = ec2.Vpc(self, "WorkshopVpc", max_azs=2)
+        ecs_cluster = ecs.Cluster(self, "WorkshopEcsCluster", vpc=vpc)
+        ecr_repository = ecr.Repository.from_repository_name(self, "WorkshopEcrRepository", REPO_NAME)
+        fargate_service = ecs_patterns.ApplicationLoadBalancedFargateService(self, "WorkshopService",
+            cluster=ecs_cluster,
+            task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
+                image=ecs.ContainerImage.from_ecr_repository(ecr_repository, tag='1.0'),
+                container_port=5000,
+            ),
+            public_load_balancer=True
+        )
+
+        # Connector Lambda function
+        connector_fn = lambda_.Function(self, "Connector",
+            code=lambda_.Code.from_asset("../connector"),
+            handler="connector.lambda_handler",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            memory_size=1024,
+            timeout=Duration.seconds(900),
+            environment={
+                "Q_INDEX_ID": "",
+                "Q_DATASOURCE_ID": "",
+                "Q_APPLICATION_ID": "",
+                "OAUTH2_CLIENT_ID": "clientid",
+                "OAUTH2_SECRET": "secret",
+                "OAUTH2_TOKEN_URL": f'http://{fargate_service.load_balancer.load_balancer_dns_name}/oauth/token',
+                "GENERIC_DATASOURCE_URL": f'http://{fargate_service.load_balancer.load_balancer_dns_name}'
+            }
+        )
+
+        connector_fn.add_to_role_policy(iam.PolicyStatement(
+            actions=[
+                "qbusiness:StartDataSourceSyncJob",
+                "qbusiness:BatchPutDocument",
+                "qbusiness:StopDataSourceSyncJob",
+            ],
+            effect=iam.Effect.ALLOW,
+            resources=[
+                f"*",
+            ]
+        ))
+
+
+        # CFN outputs
+        StackOutput(self, "ConnectorArn", value=connector_fn.function_arn)
+        StackOutput(self, "ConnectorName", value=connector_fn.function_name)
+        StackOutput(self, "ImageUri", value=ecr_repository.repository_uri)
+        StackOutput(self, "StackId", value=self.stack_id)
+        
+
+
+
+
+
