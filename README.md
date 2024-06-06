@@ -1,17 +1,8 @@
-## My Project
+# Custom connectors for Amazon Q Business
 
-TODO: Fill this README out!
+This repo contains examples of how to build custom connectors for Amazon Q Business. Currently the following examples are included in this repo:
 
-Be sure to:
-
-* Change the title in this README
-* Edit your repository description on GitHub
-
-## Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
-
-## License
-
-This library is licensed under the MIT-0 License. See the LICENSE file.
+* Microsoft Dynamics 365 Business Central - Custom connector to the Microsoft Dynamics 365 Business Central application. Shows an example of how to authenticate with Dynamics using EntraIDs, download sales invoices, and ingest them into Amazon Q Business - [Link](examples/dynamics/)
+* Generic - Generic connector to understand how a custom connector works. Utilizes a local API server to mimic a custom data source. - [Link](examples/generic/)
+* Workshop - part of the AWS custom connectors workshop. - [Link](examples/workshop/)
 

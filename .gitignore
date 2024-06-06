@@ -1,0 +1,9 @@
+.DS_Store
+.env
+.venv
+.app-venv
+.vscode
+__pycache__
+examples/generic/documents/*
+examples/workshop/datasource/documents/*
+temp
