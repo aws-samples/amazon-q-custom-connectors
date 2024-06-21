@@ -5,8 +5,11 @@ import aws_cdk as cdk
 
 from cdk.cdk_stack import CdkStack
 
+import cdk_nag as nag
 
 app = cdk.App()
+
+cdk.Aspects.of(app).add(nag.AwsSolutionsChecks(verbose=True))
 CdkStack(app, "QBusinessWorkshop",
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,

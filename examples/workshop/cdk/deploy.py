@@ -4,9 +4,9 @@
 # data source container as a Fargate ECS service.
 #
 # Options: 
-# -a, --acct_id  Target AWS Acct ID 
-# -r, --region   Target AWS Region
-#
+# -a, --acct_id  AWS_ACCT_ID    Target 12-digit AWS acct ID [REQUIRED]
+# -r, --region   AWS_REGION     Target AWS region, e.g., us-west-2 [REQUIRED]
+# -c, --command  docker|podman  Container CLI command; default: docker [OPTIONAL]
 #
 
 import boto3
@@ -32,7 +32,7 @@ log = logging.getLogger()
 
 REPO_NAME = 'qbus-workshop'
 
-# Data source code to docker image build directory
+# Copy custom data source code to docker image build directory
 shutil.copy(
   src='../../generic/server.py',
   dst='../datasource/server.py'
@@ -43,7 +43,7 @@ parser = argparse.ArgumentParser(
   description="Script with pre deploy, CDK deploy, and post deploy actions",
   formatter_class=RichHelpFormatter
 )
-parser.add_argument('-a', '--acct_id', action='store', help="target AWS acct ID for deployment", required=True)
+parser.add_argument('-a', '--acct_id', action='store', help="target 12 digit AWS acct ID for deployment", required=True)
 parser.add_argument('-r', '--region', action='store', help="target AWS region, e.g. us-west-2", required=True)
 parser.add_argument('-c', '--command', action='store', nargs='?', default='docker', help="container CLI command; valid options: docker | podman; default: docker")
 args = parser.parse_args()
@@ -67,14 +67,15 @@ if not args.command in ['docker', 'podman']:
 else:
   command = args.command
 
-# set CDK environment variables
+# Set CDK environment variables
 os.environ['CDK_DEFAULT_ACCOUNT'] = acct_id
 os.environ['CDK_DEFAULT_REGION'] = region
 
+# Run a subprocess
 def run_cmd(cmd):
   log.info(f"Running command: {cmd}")
   try:
-    # check for windows and use shell=True
+    # Check for Windows and use shell=True
     if os.name == 'nt':
       subprocess.check_output(cmd, text=True, shell=True)
     else:
@@ -82,6 +83,7 @@ def run_cmd(cmd):
   except Exception as e:
     log.error(f"Command failed: {cmd}\nError: {e}")
     exit(1)
+
 
 ###############
 # Bootstrap CDK
@@ -91,7 +93,7 @@ run_cmd(['cdk', 'bootstrap', f'aws://{acct_id}/{region}'])
 log.info("CDK bootstrap successful")
 
 ###############
-# boto3 Create ECR repository
+# boto3 create ECR repository
 ###############
 log.info("Creating ECR repository")
 try:
@@ -110,7 +112,7 @@ except ClientError as e:
     exit(1)
 
 ###############
-# login to ECR
+# boto3 login to ECR
 ###############
 log.info("Logging into ECR")
 try:
@@ -128,21 +130,21 @@ except ClientError as e:
   exit(1)
 
 ###############
-# build datasource container
+# Build datasource container
 ###############
 log.info("Building datasource container")
 run_cmd([command, 'build', '-t', REPO_NAME+':1.0', '../datasource'])
 log.info("Datasource container build successful")
 
 ###############
-# tag image for push to ECR
+# Tag image for push to ECR
 ###############
 log.info("Tagging image for push to ECR")
 run_cmd([command, 'tag', REPO_NAME+':1.0', f'{repo_uri}:1.0'])
 log.info("Image tag successful")
 
 ###############
-# push image to ECR
+# Push image to ECR
 ###############
 log.info("Pushing image to ECR")
 run_cmd([command, 'push', f'{repo_uri}:1.0'])

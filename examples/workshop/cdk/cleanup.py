@@ -1,8 +1,8 @@
 # This script cleans up Q Custom Connector workshop resources.
 #
 # Options: 
-# -a, --acct_id  Target AWS Acct ID 
-# -r, --region   Target AWS Region
+# -a, --acct_id  AWS_ACCT_ID    Target 12-digit AWS acct ID [REQUIRED]
+# -r, --region   AWS_REGION     Target AWS region, e.g., us-west-2 [REQUIRED]
 #
 # Args:
 # Cloudformation stack ID
@@ -69,7 +69,7 @@ def run_cmd(cmd):
     exit(1)
 
 ###############
-# validate cfn stack ID, and retrieve stack ID
+# validate cfn stack ID, and retrieve ECR image URI
 ###############
 try:
   log.info("Validating CloudFormation ID")

@@ -11,6 +11,7 @@ from aws_cdk import (
     aws_iam as iam,
 )
 from constructs import Construct
+import cdk_nag as nag
 
 REPO_NAME = 'qbus-workshop'
 
@@ -21,7 +22,24 @@ class CdkStack(Stack):
 
         # Custom data source resources
         vpc = ec2.Vpc(self, "WorkshopVpc", max_azs=2)
+
+        nag.NagSuppressions.add_resource_suppressions(
+            vpc,
+            [{
+                "id": "AwsSolutions-VPC7",
+                "reason": "This is a VPC for the workshop and is meant to be destroyed after the workshop is complete."
+            }]
+        )
+
         ecs_cluster = ecs.Cluster(self, "WorkshopEcsCluster", vpc=vpc)
+
+        nag.NagSuppressions.add_resource_suppressions(
+            ecs_cluster,
+            [{
+                "id": "AwsSolutions-ECS4",
+                "reason": "This is an ECS for the workshop and is meant to be destroyed after the workshop is complete."
+            }]
+        )
         ecr_repository = ecr.Repository.from_repository_name(self, "WorkshopEcrRepository", REPO_NAME)
         fargate_service = ecs_patterns.ApplicationLoadBalancedFargateService(self, "WorkshopService",
             cluster=ecs_cluster,
@@ -30,6 +48,20 @@ class CdkStack(Stack):
                 container_port=5000,
             ),
             public_load_balancer=True
+        )
+        nag.NagSuppressions.add_resource_suppressions(
+            fargate_service,
+            [{
+                "id": "AwsSolutions-ELB2",
+                "reason": "This is an ELB for the workshop and is meant to be destroyed after the workshop is complete."
+            },{
+                "id": "AwsSolutions-EC23",
+                "reason": "This is an ELB for the workshop and is meant to be destroyed after the workshop is complete."
+            },{
+                "id": "AwsSolutions-IAM5",
+                "reason": "This is an Task IAM role/policy for the workshop and is meant to be destroyed after the workshop is complete."
+            }],
+            True
         )
 
         # Connector Lambda function
@@ -61,6 +93,17 @@ class CdkStack(Stack):
                 f"*",
             ]
         ))
+        nag.NagSuppressions.add_resource_suppressions(
+            connector_fn,
+            [{
+                "id": "AwsSolutions-IAM4",
+                "reason": "This is an Lambda IAM role/policy for the workshop and is meant to be destroyed after the workshop is complete."
+            },{
+                "id": "AwsSolutions-IAM5",
+                "reason": "This is an Lambda IAM role/policy for the workshop and is meant to be destroyed after the workshop is complete."
+            }],
+            True
+        )
 
 
         # CFN outputs
