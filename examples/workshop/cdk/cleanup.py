@@ -8,6 +8,7 @@
 # Cloudformation stack ID
 #
 
+import sys
 import boto3
 import re
 import os
@@ -42,13 +43,13 @@ args = parser.parse_args()
 # Validate inputs
 if not re.match(r'(us|ap|ca|eu)-(central|(north|south)?(east|west)?)-\d', args.region):
   log.error(f"Invalid region: {args.region}")
-  exit(1)
+  sys.exit(1)
 else:
   region = args.region
 
 if not re.match(r'\d{12}', args.acct_id):
   log.error(f"Invalid account ID: {args.acct_id}")
-  exit(1)
+  sys.exit(1)
 else: 
   acct_id = args.acct_id
 
@@ -66,7 +67,7 @@ def run_cmd(cmd):
       subprocess.check_output(cmd, text=True)
   except Exception as e:
     log.error(f"Command failed: {cmd}\nError: {e}")
-    exit(1)
+    sys.exit(1)
 
 ###############
 # validate cfn stack ID, and retrieve ECR image URI
@@ -86,7 +87,7 @@ try:
 except ValidationError as e:
   log.error("Script failed to validate CFN stack ID and retrieving outputs")
   log.error(e)
-  exit(1)
+  sys.exit(1)
 
 ###############
 # delete ECR repo
@@ -103,7 +104,7 @@ except ClientError as e:
   if e.response['Error']['Code'] == 'RepositoryNotFoundException':
     log.info("Repository already deleted, SAFE to move on...")
   else:
-    exit(1)
+    sys.exit(1)
 
 ###############
 # destroy CDK stack

@@ -9,6 +9,7 @@
 # -c, --command  docker|podman  Container CLI command; default: docker [OPTIONAL]
 #
 
+import sys
 import boto3
 import shutil
 import os
@@ -31,6 +32,15 @@ logging.basicConfig(
 log = logging.getLogger()
 
 REPO_NAME = 'qbus-workshop'
+SUPPORTED_REGIONS = [
+  'us-east-1',
+  'us-west-2',
+  'us-east-2',
+  'ap-southeast-1',
+  'ap-southeast-2',
+  'eu-central-1',	
+  'eu-west-1'
+]
 
 # Copy custom data source code to docker image build directory
 shutil.copy(
@@ -49,21 +59,22 @@ parser.add_argument('-c', '--command', action='store', nargs='?', default='docke
 args = parser.parse_args()
 
 # Validate inputs
-if not re.match(r'(us|ap|ca|eu)-(central|(north|south)?(east|west)?)-\d', args.region):
+if not args.region in SUPPORTED_REGIONS:
   log.error(f"Invalid region: {args.region}")
-  exit(1)
+  log.info(f"Supported regions: {SUPPORTED_REGIONS}")
+  sys.exit(1)
 else:
   region = args.region
 
 if not re.match(r'\d{12}', args.acct_id):
   log.error(f"Invalid account ID: {args.acct_id}")
-  exit(1)
+  sys.exit(1)
 else: 
   acct_id = args.acct_id
 
 if not args.command in ['docker', 'podman']:
   log.error(f"Invalid container CLI command: {args.command}")
-  exit(1)
+  sys.exit(1)
 else:
   command = args.command
 
@@ -82,7 +93,7 @@ def run_cmd(cmd):
       subprocess.check_output(cmd, text=True)
   except Exception as e:
     log.error(f"Command failed: {cmd}\nError: {e}")
-    exit(1)
+    sys.exit(1)
 
 
 ###############
@@ -108,8 +119,11 @@ except ClientError as e:
   if e.response['Error']['Code'] == 'RepositoryAlreadyExistsException':
     log.info("Repository already exists, SAFE to move on...")
     repo_uri = f'{acct_id}.dkr.ecr.{region}.amazonaws.com/{REPO_NAME}'
+  elif e.response['Error']['Code'] == 'LayerAlreadyExistsException':
+    log.info("Layer already exists, SAFE to move on...")
+    repo_uri = f'{acct_id}.dkr.ecr.{region}.amazonaws.com/{REPO_NAME}'
   else: 
-    exit(1)
+    sys.exit(1)
 
 ###############
 # boto3 login to ECR
@@ -127,7 +141,7 @@ try:
   log.info("ECR login successful")
 except ClientError as e:
   log.error(f"Failed to login to ECR: {e}")
-  exit(1)
+  sys.exit(1)
 
 ###############
 # Build datasource container
