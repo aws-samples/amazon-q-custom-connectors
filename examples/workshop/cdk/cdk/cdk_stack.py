@@ -10,10 +10,9 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_iam as iam,
 )
+from aws_cdk.aws_ecr_assets import DockerImageAsset, Platform
 from constructs import Construct
 import cdk_nag as nag
-
-REPO_NAME = 'qbus-workshop'
 
 class CdkStack(Stack):
 
@@ -40,15 +39,22 @@ class CdkStack(Stack):
                 "reason": "This is an ECS for the workshop and is meant to be destroyed after the workshop is complete."
             }]
         )
-        ecr_repository = ecr.Repository.from_repository_name(self, "WorkshopEcrRepository", REPO_NAME)
+
+        container_image = DockerImageAsset(self, "WorkshopDataSourceImage", 
+            directory="../datasource",
+            platform=Platform.LINUX_AMD64
+        )
+
         fargate_service = ecs_patterns.ApplicationLoadBalancedFargateService(self, "WorkshopService",
             cluster=ecs_cluster,
             task_image_options=ecs_patterns.ApplicationLoadBalancedTaskImageOptions(
-                image=ecs.ContainerImage.from_ecr_repository(ecr_repository, tag='1.0'),
+                image=ecs.ContainerImage.from_docker_image_asset(container_image),
+                container_name="qbus-workshop-datasource",
                 container_port=5000,
             ),
             public_load_balancer=True
         )
+
         nag.NagSuppressions.add_resource_suppressions(
             fargate_service,
             [{
@@ -105,15 +111,8 @@ class CdkStack(Stack):
             True
         )
 
-
         # CFN outputs
         StackOutput(self, "ConnectorArn", value=connector_fn.function_arn)
         StackOutput(self, "ConnectorName", value=connector_fn.function_name)
-        StackOutput(self, "ImageUri", value=ecr_repository.repository_uri)
+        StackOutput(self, "ImageUri", value=container_image.image_uri)
         StackOutput(self, "StackId", value=self.stack_id)
-        
-
-
-
-
-
