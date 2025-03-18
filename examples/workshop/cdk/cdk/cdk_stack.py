@@ -107,6 +107,9 @@ class CdkStack(Stack):
             },{
                 "id": "AwsSolutions-IAM5",
                 "reason": "This is an Lambda IAM role/policy for the workshop and is meant to be destroyed after the workshop is complete."
+            },{
+                "id": "AwsSolutions-L1",
+                "reason": "This is an Lambda IAM role/policy for the workshop and is meant to be destroyed after the workshop is complete."
             }],
             True
         )
