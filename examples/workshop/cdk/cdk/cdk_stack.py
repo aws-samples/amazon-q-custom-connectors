@@ -70,12 +70,19 @@ class CdkStack(Stack):
             True
         )
 
+        # add Lambda layer
+        dependencies = lambda_.LayerVersion(self, "Dependencies",
+            code=lambda_.Code.from_asset("lib/dependencies.zip"),
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_12],
+        )
+
         # Connector Lambda function
         connector_fn = lambda_.Function(self, "Connector",
             code=lambda_.Code.from_asset("../connector"),
             handler="connector.lambda_handler",
             runtime=lambda_.Runtime.PYTHON_3_12,
             memory_size=1024,
+            layers=[dependencies],
             timeout=Duration.seconds(900),
             environment={
                 "Q_INDEX_ID": "",
