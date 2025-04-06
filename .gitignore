@@ -7,3 +7,4 @@ __pycache__
 examples/generic/documents/*
 examples/workshop/datasource/documents/*
 temp
+archive
